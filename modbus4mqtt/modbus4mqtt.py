@@ -16,12 +16,6 @@ MAX_DECIMAL_POINTS = 8
 class MqttInterface:
     def __init__(self, hostname, port, username, password, config_file, mqtt_topic_prefix,
                  use_tls=True, insecure=False, cafile=None, cert=None, key=None):
-        self._mqtt_client = mqtt.Client()
-        self._mb = modbus_interface.ModbusInterface(self.config['ip'],
-                                                    self.config.get('port', 502),
-                                                    self.config.get('update_rate', 5),
-                                                    variant=self.config.get('variant', None),
-                                                    scan_batching=self.config.get('scan_batching', None))
         self.hostname = hostname
         self._port = port
         self.username = username
@@ -41,6 +35,12 @@ class MqttInterface:
             register['address'] += self.address_offset
         self.modbus_connect_retries = -1  # Retry forever by default
         self.modbus_reconnect_sleep_interval = 5  # Wait this many seconds between modbus connection attempts
+        self._mqtt_client = mqtt.Client()
+        self._mb = modbus_interface.ModbusInterface(self.config['ip'],
+                                                    self.config.get('port', 502),
+                                                    self.config.get('update_rate', 5),
+                                                    variant=self.config.get('variant', None),
+                                                    scan_batching=self.config.get('scan_batching', None))
 
     def connect(self):
         # Connects to modbus and MQTT.
