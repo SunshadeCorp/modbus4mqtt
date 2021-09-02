@@ -218,7 +218,7 @@ class MqttInterface:
         duplicate_json_keys = {}
         # Key: shared pub_topics, value: set of retain values (true/false)
         retain_setting = {}
-        valid_types = ['uint16', 'int16']
+        valid_types = ['uint16', 'int16', 'uint32', 'int32']
 
         # Look for duplicate pub_topics
         for register in registers:
