@@ -13,9 +13,15 @@ from . import version
 MAX_DECIMAL_POINTS = 8
 
 
-class mqtt_interface():
+class MqttInterface:
     def __init__(self, hostname, port, username, password, config_file, mqtt_topic_prefix,
                  use_tls=True, insecure=False, cafile=None, cert=None, key=None):
+        self._mqtt_client = mqtt.Client()
+        self._mb = modbus_interface.ModbusInterface(self.config['ip'],
+                                                    self.config.get('port', 502),
+                                                    self.config.get('update_rate', 5),
+                                                    variant=self.config.get('variant', None),
+                                                    scan_batching=self.config.get('scan_batching', None))
         self.hostname = hostname
         self._port = port
         self.username = username
@@ -42,14 +48,9 @@ class mqtt_interface():
         self.connect_mqtt()
 
     def connect_modbus(self):
-        self._mb = modbus_interface.modbus_interface(self.config['ip'],
-                                                     self.config.get('port', 502),
-                                                     self.config.get('update_rate', 5),
-                                                     variant=self.config.get('variant', None),
-                                                     scan_batching=self.config.get('scan_batching', None))
         failed_attempts = 1
         while self._mb.connect():
-            logging.warning("Modbus connection attempt {} failed. Retrying...".format(failed_attempts))
+            logging.warning(f"Modbus connection attempt {failed_attempts} failed. Retrying...")
             failed_attempts += 1
             if self.modbus_connect_retries != -1 and failed_attempts > self.modbus_connect_retries:
                 logging.error("Failed to connect to modbus. Giving up.")
@@ -60,13 +61,16 @@ class mqtt_interface():
         # Tells the modbus interface about the registers we consider interesting.
         for register in self.registers:
             self._mb.add_monitor_register(register.get('table', 'holding'), register['address'])
+            datatype = register.get('type', 'uint16')
+            if datatype.endswith('32'):
+                self._mb.add_monitor_register(register.get('table', 'holding'), register['address'] + 1)
             register['value'] = None
 
-    def modbus_connection_failed(self):
+    @staticmethod
+    def modbus_connection_failed():
         exit(1)
 
     def connect_mqtt(self):
-        self._mqtt_client = mqtt.Client()
         self._mqtt_client.username_pw_set(self.username, self.password)
         self._mqtt_client._on_connect = self._on_connect
         self._mqtt_client._on_disconnect = self._on_disconnect
@@ -86,7 +90,7 @@ class mqtt_interface():
         try:
             self._mb.poll()
         except Exception as e:
-            logging.exception("Failed to poll modbus device, attempting to reconnect: {}".format(e))
+            logging.exception(f"Failed to poll modbus device, attempting to reconnect: {e}")
             self.connect_modbus()
             return
 
@@ -97,16 +101,26 @@ class mqtt_interface():
         for register in self._get_registers_with('pub_topic'):
             try:
                 value = self._mb.get_value(register.get('table', 'holding'), register['address'])
-            except Exception:
-                logging.warning("Couldn't get value from register {} in table {}".format(register['address'],
-                                                                                         register.get('table',
-                                                                                                      'holding')))
+            except Exception as e:
+                logging.warning(f"Couldn't get value from register {register['address']} "
+                                f"in table {register.get('table', 'holding')}, {e}")
                 continue
             # Filter the value through the mask, if present.
             value &= register.get('mask', 0xFFFF)
             # Tweak the value according to the type.
-            type = register.get('type', 'uint16')
-            value = modbus_interface._convert_from_uint16_to_type(value, type)
+            datatype = register.get('type', 'uint16')
+            if datatype.endswith('32'):
+                try:
+                    value2 = self._mb.get_value(register.get('table', 'holding'), register['address'] + 1)
+                except Exception as e:
+                    logging.warning(f"Couldn't get value from register {register['address'] + 1} "
+                                    f"in table {register.get('table', 'holding')}, {e}")
+                    continue
+                value = value.to_bytes(length=2, byteorder='big', signed=False) + value2.to_bytes(length=2,
+                                                                                                  byteorder='big',
+                                                                                                  signed=False)
+                value = int.from_bytes(value, byteorder='big', signed=False)
+            value = modbus_interface.convert_to_type(value, datatype)
             # Scale the value, if required.
             value *= register.get('scale', 1)
             # Clamp the number of decimal points
@@ -151,7 +165,8 @@ class mqtt_interface():
             print("Subscribed to {}".format(self.prefix + register['set_topic']))
         self._mqtt_client.publish(self.prefix + 'modbus4mqtt', 'modbus4mqtt v{} connected.'.format(version.version))
 
-    def _on_disconnect(self, client, userdata, rc):
+    @staticmethod
+    def _on_disconnect(client, userdata, rc):
         logging.warning("Disconnected from MQTT. Attempting to reconnect.")
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
@@ -189,8 +204,8 @@ class mqtt_interface():
                 logging.error("Failed to convert register value for writing. "
                               "Bad/missing value_map? Topic: {}, Value: {}".format(topic, value))
                 continue
-            type = register.get('type', 'uint16')
-            value = modbus_interface._convert_from_type_to_uint16(value, type)
+            datatype = register.get('type', 'uint16')
+            value = modbus_interface.convert_from_type_to_uint16(value, datatype)
             self._mb.set_value(register.get('table', 'holding'), register['address'], int(value),
                                register.get('mask', 0xFFFF))
 
@@ -207,9 +222,9 @@ class mqtt_interface():
 
         # Look for duplicate pub_topics
         for register in registers:
-            type = register.get('type', 'uint16')
-            if type not in valid_types:
-                raise ValueError("Bad YAML configuration. Register has invalid type '{}'.".format(type))
+            datatype = register.get('type', 'uint16')
+            if datatype not in valid_types:
+                raise ValueError("Bad YAML configuration. Register has invalid type '{}'.".format(datatype))
             if register['pub_topic'] in all_pub_topics:
                 duplicate_pub_topics.add(register['pub_topic'])
                 duplicate_json_keys[register['pub_topic']] = []
@@ -240,11 +255,12 @@ class mqtt_interface():
                 raise ValueError("Bad YAML configuration. pub_topic '{}' has conflicting retain settings."
                                  .format(topic))
 
-    def _load_modbus_config(self, path):
+    @staticmethod
+    def _load_modbus_config(path):
         yaml = YAML(typ='safe')
         result = yaml.load(open(path, 'r').read())
         registers = [register for register in result['registers'] if 'pub_topic' in register]
-        mqtt_interface._validate_registers(registers)
+        MqttInterface._validate_registers(registers)
         return result
 
     def loop_forever(self):
@@ -283,8 +299,8 @@ def main(hostname, port, username, password, config, mqtt_topic_prefix, use_tls,
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
     logging.info("Starting modbus4mqtt v{}".format(version.version))
-    i = mqtt_interface(hostname, port, username, password, config, mqtt_topic_prefix,
-                       use_tls, insecure, cafile, cert, key)
+    i = MqttInterface(hostname, port, username, password, config, mqtt_topic_prefix,
+                      use_tls, insecure, cafile, cert, key)
     i.connect()
     i.loop_forever()
 

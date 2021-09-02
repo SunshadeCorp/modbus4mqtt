@@ -1,12 +1,8 @@
-from python:3-alpine
+FROM python:3-buster
 
-run apk add --no-cache --virtual .build-deps gcc g++ make libffi-dev openssl-dev
+COPY ["README.md", "setup.py", "/modbus4mqtt/"]
+COPY ["./modbus4mqtt/*", "/modbus4mqtt/modbus4mqtt/"]
 
-copy ["README.md", "setup.py", "/modbus4mqtt/"]
-copy ["./modbus4mqtt/*", "/modbus4mqtt/modbus4mqtt/"]
+RUN pip install /modbus4mqtt
 
-run pip install /modbus4mqtt
-
-run apk del .build-deps
-
-entrypoint ["modbus4mqtt"]
+ENTRYPOINT ["modbus4mqtt"]

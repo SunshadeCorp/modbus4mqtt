@@ -14,7 +14,7 @@ DEFAULT_WRITE_SLEEP_S = 0.05
 DEFAULT_READ_SLEEP_S = 0.05
 
 
-class modbus_interface():
+class ModbusInterface:
 
     def __init__(self, ip, port=502, update_rate_s=DEFAULT_SCAN_RATE_S, variant=None, scan_batching=None):
         self._ip = ip
@@ -150,23 +150,29 @@ class modbus_interface():
                 "Failed to read {} {} table registers starting from {}: {}".format(count, table, start, result))
 
 
-def _convert_from_uint16_to_type(value, type):
-    type = type.strip().lower()
-    if type == 'uint16':
+def convert_to_type(value: int, datatype: str) -> int:
+    datatype = datatype.strip().lower()
+    if datatype == 'uint16':
         return value
-    elif type == 'int16':
-        if value >= 2 ** 15:
-            return value - 2 ** 16
+    elif datatype == 'int16':
+        value = value.to_bytes(length=2, byteorder='big', signed=False)
+        value = int.from_bytes(value, byteorder='big', signed=True)
         return value
-    raise ValueError("Unrecognised type conversion attempted: uint16 to {}".format(type))
+    elif datatype == 'uint32':
+        return value
+    elif datatype == 'int32':
+        value = value.to_bytes(length=4, byteorder='big', signed=False)
+        value = int.from_bytes(value, byteorder='big', signed=True)
+        return value
+    raise ValueError("Unrecognised type conversion attempted: uint16 to {}".format(datatype))
 
 
-def _convert_from_type_to_uint16(value, type):
-    type = type.strip().lower()
-    if type == 'uint16':
+def convert_from_type_to_uint16(value, datatype):
+    datatype = datatype.strip().lower()
+    if datatype == 'uint16':
         return value
-    elif type == 'int16':
+    elif datatype == 'int16':
         if value < 0:
             return value + 2 ** 16
         return value
-    raise ValueError("Unrecognised type conversion attempted: {} to uint16".format(type))
+    raise ValueError("Unrecognised type conversion attempted: {} to uint16".format(datatype))

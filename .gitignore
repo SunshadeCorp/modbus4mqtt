@@ -6,3 +6,5 @@ dist
 *.egg-info
 go.sh
 *,cover
+venv
+.idea
