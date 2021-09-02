@@ -243,9 +243,9 @@ class MqttInterface:
                                      "json_key field. Registers that share a pub_topic must also have a unique "
                                      "json_key.".format(register['pub_topic']))
                 if register['json_key'] in duplicate_json_keys[register['pub_topic']]:
-                    raise ValueError("Bad YAML configuration. pub_topic '{}' duplicated across registers with a "
-                                     "duplicated json_key field. Registers that share a pub_topic must also have "
-                                     "a unique json_key.".format(register['pub_topic']))
+                    raise ValueError(f"Bad YAML configuration. pub_topic '{register['pub_topic']}' duplicated across "
+                                     f"registers with a duplicated json_key {register['json_key']} field. Registers "
+                                     f"that share a pub_topic must also have a unique json_key.")
                 duplicate_json_keys[register['pub_topic']] += [register['json_key']]
                 if 'retain' in register:
                     retain_setting[register['pub_topic']].add(register['retain'])
