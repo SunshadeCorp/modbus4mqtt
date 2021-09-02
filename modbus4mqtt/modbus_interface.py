@@ -13,6 +13,7 @@ DEFAULT_WRITE_BLOCK_INTERVAL_S = 0.2
 DEFAULT_WRITE_SLEEP_S = 0.05
 DEFAULT_READ_SLEEP_S = 0.05
 
+
 class modbus_interface():
 
     def __init__(self, ip, port=502, update_rate_s=DEFAULT_SCAN_RATE_S, variant=None, scan_batching=None):
@@ -31,10 +32,12 @@ class modbus_interface():
         self._scan_batching = DEFAULT_SCAN_BATCHING
         if scan_batching is not None:
             if scan_batching < MIN_SCAN_BATCHING:
-                logging.warning("Bad value for scan_batching: {}. Enforcing minimum value of {}".format(scan_batching, MIN_SCAN_BATCHING))
+                logging.warning("Bad value for scan_batching: {}. Enforcing minimum value of {}".format(scan_batching,
+                                                                                                        MIN_SCAN_BATCHING))
                 self._scan_batching = MIN_SCAN_BATCHING
             elif scan_batching > MAX_SCAN_BATCHING:
-                logging.warning("Bad value for scan_batching: {}. Enforcing maximum value of {}".format(scan_batching, MAX_SCAN_BATCHING))
+                logging.warning("Bad value for scan_batching: {}. Enforcing maximum value of {}".format(scan_batching,
+                                                                                                        MAX_SCAN_BATCHING))
                 self._scan_batching = MAX_SCAN_BATCHING
             else:
                 self._scan_batching = scan_batching
@@ -46,8 +49,8 @@ class modbus_interface():
             # the modbus traffic. https://github.com/rpvelloso/Sungrow-Modbus is a drop-in
             # replacement for ModbusTcpClient that manages decrypting the traffic for us.
             self._mb = SungrowModbusTcpClient.SungrowModbusTcpClient(host=self._ip, port=self._port,
-                                              framer=ModbusSocketFramer, timeout=1,
-                                              RetryOnEmpty=True, retries=1)
+                                                                     framer=ModbusSocketFramer, timeout=1,
+                                                                     RetryOnEmpty=True, retries=1)
         else:
             self._mb = ModbusTcpClient(self._ip, self._port,
                                        framer=ModbusSocketFramer, timeout=1,
@@ -76,14 +79,15 @@ class modbus_interface():
                         sleep(DEFAULT_READ_SLEEP_S)
                     except ValueError as e:
                         logging.exception("{}".format(e))
-                    start = group + self._scan_batching-1
+                    start = group + self._scan_batching - 1
         self._process_writes()
 
     def get_value(self, table, addr):
         if table not in self._values:
             raise ValueError("Unsupported table type. Please only use: {}".format(self._values.keys()))
         if addr not in self._values[table]:
-            raise ValueError("Unpolled address. Use add_monitor_register(addr, table) to add a register to the polled list.")
+            raise ValueError(
+                "Unpolled address. Use add_monitor_register(addr, table) to add a register to the polled list.")
         return self._values[table][addr]
 
     def set_value(self, table, addr, value, mask=0xFFFF):
@@ -120,7 +124,7 @@ class modbus_interface():
                     # result = self._mb.mask_write_register(address=addr, and_mask=(1<<16)-1-mask, or_mask=value, unit=0x01)
                     # print("Result: {}".format(result))
                     old_value = self._scan_value_range('holding', addr, 1)[0]
-                    and_mask = (1<<16)-1-mask
+                    and_mask = (1 << 16) - 1 - mask
                     or_mask = value
                     new_value = (old_value & and_mask) | (or_mask & (mask))
                     self._mb.write_register(addr, new_value, unit=0x01)
@@ -142,17 +146,20 @@ class modbus_interface():
             return result.registers
         except:
             # The result doesn't have a registers attribute, something has gone wrong!
-            raise ValueError("Failed to read {} {} table registers starting from {}: {}".format(count, table, start, result))
+            raise ValueError(
+                "Failed to read {} {} table registers starting from {}: {}".format(count, table, start, result))
+
 
 def _convert_from_uint16_to_type(value, type):
     type = type.strip().lower()
     if type == 'uint16':
         return value
     elif type == 'int16':
-        if value >= 2**15:
-            return value - 2**16
+        if value >= 2 ** 15:
+            return value - 2 ** 16
         return value
     raise ValueError("Unrecognised type conversion attempted: uint16 to {}".format(type))
+
 
 def _convert_from_type_to_uint16(value, type):
     type = type.strip().lower()
@@ -160,6 +167,6 @@ def _convert_from_type_to_uint16(value, type):
         return value
     elif type == 'int16':
         if value < 0:
-            return value + 2**16
+            return value + 2 ** 16
         return value
     raise ValueError("Unrecognised type conversion attempted: {} to uint16".format(type))

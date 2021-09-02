@@ -99,7 +99,8 @@ class mqtt_interface():
                 value = self._mb.get_value(register.get('table', 'holding'), register['address'])
             except Exception:
                 logging.warning("Couldn't get value from register {} in table {}".format(register['address'],
-                                register.get('table', 'holding')))
+                                                                                         register.get('table',
+                                                                                                      'holding')))
                 continue
             # Filter the value through the mask, if present.
             value &= register.get('mask', 0xFFFF)
@@ -131,12 +132,12 @@ class mqtt_interface():
                     json_messages_retain[register['pub_topic']] = register['retain']
             else:
                 retain = register.get('retain', False)
-                self._mqtt_client.publish(self.prefix+register['pub_topic'], value, retain=retain)
+                self._mqtt_client.publish(self.prefix + register['pub_topic'], value, retain=retain)
 
         # Transmit the queued JSON messages.
         for topic, message in json_messages.items():
             m = json.dumps(message, sort_keys=True)
-            self._mqtt_client.publish(self.prefix+topic, m, retain=json_messages_retain[topic])
+            self._mqtt_client.publish(self.prefix + topic, m, retain=json_messages_retain[topic])
 
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -146,9 +147,9 @@ class mqtt_interface():
             return
         # Subscribe to all the set topics.
         for register in self._get_registers_with('set_topic'):
-            self._mqtt_client.subscribe(self.prefix+register['set_topic'])
-            print("Subscribed to {}".format(self.prefix+register['set_topic']))
-        self._mqtt_client.publish(self.prefix+'modbus4mqtt', 'modbus4mqtt v{} connected.'.format(version.version))
+            self._mqtt_client.subscribe(self.prefix + register['set_topic'])
+            print("Subscribed to {}".format(self.prefix + register['set_topic']))
+        self._mqtt_client.publish(self.prefix + 'modbus4mqtt', 'modbus4mqtt v{} connected.'.format(version.version))
 
     def _on_disconnect(self, client, userdata, rc):
         logging.warning("Disconnected from MQTT. Attempting to reconnect.")
@@ -170,7 +171,9 @@ class mqtt_interface():
                     value = str(value, 'utf-8')
                     if value not in register['value_map']:
                         logging.warning("Value not in value_map. Topic: {}, value: {}, valid values: {}".format(topic,
-                                        value, register['value_map'].keys()))
+                                                                                                                value,
+                                                                                                                register[
+                                                                                                                    'value_map'].keys()))
                         continue
                     # Map the value from the human-readable form into the raw modbus number
                     value = register['value_map'][value]
@@ -181,7 +184,7 @@ class mqtt_interface():
             try:
                 # Scale the value, if required.
                 value = float(value)
-                value = round(value/register.get('scale', 1))
+                value = round(value / register.get('scale', 1))
             except ValueError:
                 logging.error("Failed to convert register value for writing. "
                               "Bad/missing value_map? Topic: {}, Value: {}".format(topic, value))
