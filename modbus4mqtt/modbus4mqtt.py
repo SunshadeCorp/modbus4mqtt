@@ -116,13 +116,10 @@ class MqttInterface:
                     logging.warning(f"Couldn't get value from register {register['address'] + 1} "
                                     f"in table {register.get('table', 'holding')}, {e}")
                     continue
-                logging.info(f'{value} {value2}')
-                value = value.to_bytes(length=2, byteorder='big', signed=False) + value2.to_bytes(length=2,
+                value = value2.to_bytes(length=2, byteorder='big', signed=False) + value.to_bytes(length=2,
                                                                                                   byteorder='big',
                                                                                                   signed=False)
-                logging.info(f'{value}')
                 value = int.from_bytes(value, byteorder='big', signed=False)
-                logging.info(f'{value}')
             value = modbus_interface.convert_to_type(value, datatype)
             # Scale the value, if required.
             value *= register.get('scale', 1)
