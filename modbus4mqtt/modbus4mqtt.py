@@ -107,7 +107,8 @@ class MqttInterface:
                 continue
             # Filter the value through the mask, if present.
             value &= register.get('mask', 0xFFFF)
-            logging.info(register.get('mask', 0xFFFF))
+            if register.get('mask', 0xFFFF) != 0xFFFF:
+                logging.info(f"{type(someObject).__name__} {register.get('mask', 0xFFFF)}")
             # Tweak the value according to the type.
             datatype = register.get('type', 'uint16')
             if datatype.endswith('32'):
