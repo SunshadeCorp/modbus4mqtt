@@ -66,8 +66,8 @@ class ModbusInterface:
             # This batches up modbus reads in chunks of self._scan_batching
             start = -1
             for k in sorted(self._tables[table]):
-                group = int(k) - int(k) % self._scan_batching
-                if (start < group):
+                group = int(k) - (int(k) + 1) % self._scan_batching
+                if start < group:
                     try:
                         values = self._scan_value_range(table, group, self._scan_batching)
                         for x in range(0, self._scan_batching):
