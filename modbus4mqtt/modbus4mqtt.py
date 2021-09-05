@@ -51,7 +51,7 @@ class MqttInterface:
 
     def connect_modbus(self):
         failed_attempts = 1
-        while self._mb._mb.connect():
+        while not self._mb._mb.connect():
             logging.warning(f"Modbus connection attempt {failed_attempts} failed. Retrying...")
             failed_attempts += 1
             if self.modbus_connect_retries != -1 and failed_attempts > self.modbus_connect_retries:
