@@ -41,8 +41,6 @@ class ModbusInterface:
                 self._scan_batching = MAX_SCAN_BATCHING
             else:
                 self._scan_batching = scan_batching
-
-    def connect(self):
         # Connects to the modbus device
         if self._variant == 'sungrow':
             # Some later versions of the sungrow inverter firmware encrypts the payloads of
