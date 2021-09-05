@@ -47,7 +47,7 @@ class ModbusInterface:
             # the modbus traffic. https://github.com/rpvelloso/Sungrow-Modbus is a drop-in
             # replacement for ModbusTcpClient that manages decrypting the traffic for us.
             self._mb = SungrowModbusTcpClient.SungrowModbusTcpClient(host=self._ip, port=self._port,
-                                                                     framer=ModbusSocketFramer, timeout=1,
+                                                                     framer=ModbusSocketFramer, timeout=10,
                                                                      RetryOnEmpty=True, retries=1)
         else:
             self._mb = ModbusTcpClient(self._ip, self._port,
