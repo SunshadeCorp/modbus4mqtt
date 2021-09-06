@@ -73,9 +73,9 @@ class MqttInterface:
 
     def connect_mqtt(self):
         self.mqtt_client.username_pw_set(self.username, self.password)
-        self.mqtt_client.on_connect(self._on_connect)
-        self.mqtt_client.on_disconnect(self._on_disconnect)
-        self.mqtt_client.on_message(self._on_message)
+        self.mqtt_client.on_connect = self._on_connect
+        self.mqtt_client.on_disconnect = self._on_disconnect
+        self.mqtt_client.on_message = self._on_message
         if self.use_tls:
             self.mqtt_client.tls_set(ca_certs=self.cafile, certfile=self.cert, keyfile=self.key)
             self.mqtt_client.tls_insecure_set(self.insecure)
