@@ -54,8 +54,8 @@ class ModbusInterface:
                                        framer=ModbusSocketFramer, timeout=1,
                                        RetryOnEmpty=True, retries=1)
 
-    def connect(self):
-        self._mb.connect()
+    def connect(self) -> bool:
+        return self._mb.connect()
 
     def add_monitor_register(self, table: str, addr: int):
         # Accepts a modbus register and table to monitor
