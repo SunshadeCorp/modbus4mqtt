@@ -69,6 +69,7 @@ class ModbusInterface:
                 group = int(k) - (int(k) + 1) % self._scan_batching
                 if start < group:
                     try:
+                        logging.exception(f"group: {group}")
                         values = self._scan_value_range(table, group, self._scan_batching)
                         for x in range(0, self._scan_batching):
                             key = group + x
@@ -76,7 +77,7 @@ class ModbusInterface:
                         # Avoid back-to-back read operations that could overwhelm some modbus devices.
                         sleep(DEFAULT_READ_SLEEP_S)
                     except ValueError as e:
-                        logging.exception("{}".format(e))
+                        logging.exception(f"{e}")
                     start = group + self._scan_batching - 1
         self._process_writes()
 
