@@ -15,8 +15,8 @@ DEFAULT_READ_SLEEP_S = 0.05
 
 
 class ModbusInterface:
-
-    def __init__(self, ip, port=502, update_rate_s=DEFAULT_SCAN_RATE_S, variant=None, scan_batching=None):
+    def __init__(self, ip: str, port: int = 502, update_rate_s: int = DEFAULT_SCAN_RATE_S, variant: str = None,
+                 scan_batching: int = None):
         self._ip = ip
         self._port = port
         # This is a dict of sets. Each key represents one table of modbus registers.
@@ -54,7 +54,10 @@ class ModbusInterface:
                                        framer=ModbusSocketFramer, timeout=1,
                                        RetryOnEmpty=True, retries=1)
 
-    def add_monitor_register(self, table, addr):
+    def connect(self):
+        self._mb.connect()
+
+    def add_monitor_register(self, table: str, addr: int):
         # Accepts a modbus register and table to monitor
         if table not in self._tables:
             raise ValueError("Unsupported table type. Please only use: {}".format(self._tables.keys()))
@@ -80,7 +83,10 @@ class ModbusInterface:
                     start = group + self._scan_batching - 1
         self._process_writes()
 
-    def get_value(self, table, addr):
+    def get_value(self, table: str, addr: int):
+        """
+        :raises ValueError:
+        """
         if table not in self._values:
             raise ValueError("Unsupported table type. Please only use: {}".format(self._values.keys()))
         if addr not in self._values[table]:
@@ -88,7 +94,10 @@ class ModbusInterface:
                 "Unpolled address. Use add_monitor_register(addr, table) to add a register to the polled list.")
         return self._values[table][addr]
 
-    def set_value(self, table, addr, value, mask=0xFFFF):
+    def set_value(self, table: str, addr: int, value: int, mask: int = 0xFFFF):
+        """
+        :raises ValueError:
+        """
         if table != 'holding':
             # I'm not sure if this is true for all devices. I might support writing to coils later,
             # so leave this door open.
@@ -96,7 +105,7 @@ class ModbusInterface:
         self._planned_writes.put((addr, value, mask))
         self._process_writes()
 
-    def _process_writes(self, max_block_s=DEFAULT_WRITE_BLOCK_INTERVAL_S):
+    def _process_writes(self, max_block_s: float = DEFAULT_WRITE_BLOCK_INTERVAL_S):
         # TODO I am not entirely happy with this system. It's supposed to prevent
         # anything overwhelming the modbus interface with a heap of rapid writes,
         # but without its own event loop it could be quite a while between calls to
@@ -134,7 +143,10 @@ class ModbusInterface:
         finally:
             self._writing = False
 
-    def _scan_value_range(self, table, start, count):
+    def _scan_value_range(self, table: str, start: int, count: int):
+        """
+        :raises ValueError:
+        """
         result = None
         if table == 'input':
             result = self._mb.read_input_registers(start, count, unit=0x01)
@@ -149,6 +161,9 @@ class ModbusInterface:
 
 
 def convert_to_type(value: int, datatype: str) -> int:
+    """
+    :raises ValueError:
+    """
     datatype = datatype.strip().lower()
     if datatype == 'uint16':
         return value
@@ -165,7 +180,10 @@ def convert_to_type(value: int, datatype: str) -> int:
     raise ValueError("Unrecognised type conversion attempted: uint16 to {}".format(datatype))
 
 
-def convert_from_type_to_uint16(value, datatype):
+def convert_from_type_to_uint16(value: int, datatype: str) -> int:
+    """
+    :raises ValueError:
+    """
     datatype = datatype.strip().lower()
     if datatype == 'uint16':
         return value
