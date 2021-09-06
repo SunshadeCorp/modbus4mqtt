@@ -61,7 +61,6 @@ class ModbusInterface:
         self._tables[table].add(addr)
 
     def poll(self):
-        logging.info("start poll")
         # Polls for the values marked as interesting in self._tables.
         for table in self._tables:
             # This batches up modbus reads in chunks of self._scan_batching
@@ -70,7 +69,6 @@ class ModbusInterface:
                 group = int(k) - (int(k) + 1) % self._scan_batching
                 if start < group:
                     try:
-                        logging.info(f"group: {group}")
                         values = self._scan_value_range(table, group, self._scan_batching)
                         for x in range(0, self._scan_batching):
                             key = group + x
@@ -81,7 +79,6 @@ class ModbusInterface:
                         logging.exception(f"{e}")
                     start = group + self._scan_batching - 1
         self._process_writes()
-        logging.info("end poll")
 
     def get_value(self, table, addr):
         if table not in self._values:
