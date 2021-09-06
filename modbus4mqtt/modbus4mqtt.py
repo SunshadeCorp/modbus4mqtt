@@ -128,6 +128,15 @@ class MqttInterface:
                                                                                                   signed=False)
                 value = int.from_bytes(value, byteorder='big', signed=False)
             value = modbus_interface.convert_to_type(value, datatype)
+            if 'modifier' in register:
+                if register['modifier'] == 'positive_only':
+                    if value < 0:
+                        value = 0
+                elif register['modifier'] == 'negative_only':
+                    if value > 0:
+                        value = 0
+                    else:
+                        value = abs(value)
             # Scale the value, if required.
             value *= register.get('scale', 1)
             # Clamp the number of decimal points
