@@ -133,10 +133,7 @@ class MqttInterface:
                     if value < 0:
                         value = 0
                 elif register['modifier'] == 'negative_only':
-                    if value > 0:
-                        value = 0
-                    else:
-                        value = abs(value)
+                    value = 0 if value >= 0 else abs(value)
             # Scale the value, if required.
             value *= register.get('scale', 1)
             # Clamp the number of decimal points
