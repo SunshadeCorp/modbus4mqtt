@@ -79,6 +79,7 @@ class MqttInterface:
         if self.use_tls:
             self.mqtt_client.tls_set(ca_certs=self.cafile, certfile=self.cert, keyfile=self.key)
             self.mqtt_client.tls_insecure_set(self.insecure)
+        self.mqtt_client.will_set(self.prefix + 'available', 'offline', retain=True)
         self.mqtt_client.connect(self.hostname, self._port, 60)
         self.mqtt_client.loop_start()
 
@@ -177,6 +178,7 @@ class MqttInterface:
             self.mqtt_client.subscribe(self.prefix + register['set_topic'])
             print("Subscribed to {}".format(self.prefix + register['set_topic']))
         self.mqtt_client.publish(self.prefix + 'modbus4mqtt', 'modbus4mqtt v{} connected.'.format(version.version))
+        self.mqtt_client.publish(self.prefix + 'available', 'online', retain=True)
 
     @staticmethod
     def _on_disconnect(client: mqtt.Client, userdata, rc):
