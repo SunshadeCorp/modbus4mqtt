@@ -5,8 +5,7 @@ RUN apk --no-cache add --virtual build-deps gcc g++ make libffi-dev openssl-dev 
 COPY ["README.md", "setup.py", "/modbus4mqtt/"]
 COPY ["./modbus4mqtt/*", "/modbus4mqtt/modbus4mqtt/"]
 
-RUN pip install /modbus4mqtt
-
-RUN apk del build-deps
+RUN pip install /modbus4mqtt && \
+    apk del build-deps
 
 ENTRYPOINT ["modbus4mqtt"]
