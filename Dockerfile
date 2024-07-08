@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm
+FROM python:3.11-alpine
 
 RUN pip install setuptools ruamel.yaml~=0.16.12 click paho-mqtt pymodbus~=2.5.3 SungrowModbusTcpClient~=0.1.5
 COPY ["README.md", "setup.py", "/modbus4mqtt/"]
