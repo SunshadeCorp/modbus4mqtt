@@ -2,7 +2,7 @@ from time import time, sleep
 import logging
 from queue import Queue
 from pymodbus.client.sync import ModbusTcpClient, ModbusSocketFramer
-from pymodbus import exceptions
+from pymodbus.exceptions import ConnectionException
 from SungrowModbusTcpClient import SungrowModbusTcpClient
 
 DEFAULT_SCAN_RATE_S = 5
@@ -57,7 +57,7 @@ class ModbusInterface:
     def connect(self) -> bool:
         try:
             return self._mb.connect()
-        except ConnectionResetError as e:
+        except (ConnectionResetError, ConnectionException) as e:
             logging.exception(f"{e}")
             return False
 
