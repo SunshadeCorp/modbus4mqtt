@@ -55,7 +55,11 @@ class ModbusInterface:
                                        RetryOnEmpty=True, retries=1)
 
     def connect(self) -> bool:
-        return self._mb.connect()
+        try:
+            return self._mb.connect()
+        except ConnectionResetError as e:
+            logging.exception(f"{e}")
+            return False
 
     def add_monitor_register(self, table: str, addr: int):
         # Accepts a modbus register and table to monitor
